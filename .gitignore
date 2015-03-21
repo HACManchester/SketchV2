@@ -1,0 +1,11 @@
+# ignore build and dependency information
+*.o
+*.d
+
+# ignore build files
+Sketch.lss
+Sketch.map
+Sketch.sym
+
+# ignore any temporary editor files
+*~
