@@ -192,7 +192,7 @@ int main(void)
 			get_accelerometer_data(&x, &y, &z, &t, rb);
 			fprintf(&USBSerialStream, "X:%d Y:%d Z:%d\nT=%d (%x %x)\n",
 				x, y, z, t, rb[0], rb[1]);
-			count = 10;
+			count = 50;
 		}
 		
 		/* Must throw away unused bytes from the host, or it will lock up while waiting for the device */
