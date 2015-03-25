@@ -5,7 +5,7 @@ static inline void i2c_delay(void)
 	// too much faster and the pic tends to start nacking data
 	// 10 gives us around 40kHz - needs PIC running around 16MHZ
 	// 1 give us around the 110kHz rate
-	_delay_loop_2(10);
+	_delay_loop_2(2);
 }
 
 static void wait_scl(void)
