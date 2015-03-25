@@ -30,6 +30,7 @@ static inline unsigned char i2c_get_sda(void) { return PINC & SDA; }
 
 #define iic_send_bytes i2c_send_bytes
 #define iic_receive_byte i2c_receive_byte
+#define iic_receive_bytes i2c_receive_bytes
 
 #include "i2c-code.h"
 #include "i2c.h"

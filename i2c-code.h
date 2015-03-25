@@ -175,3 +175,26 @@ int iic_receive_byte(unsigned char addr)
 	i2c_stop();
 	return result;
 }
+
+int iic_receive_bytes(unsigned char addr, unsigned size,
+		     uint8_t *data)
+{
+	unsigned char ret;
+	int i;
+
+	i2c_start();
+
+	//printf_P(PSTR("sending addr %x\n"), ((addr << 1) | 1));
+	ret = i2c_tx((addr << 1) | 1);
+	if (ret) {
+		i2c_stop();
+		return -1;
+	}
+
+	for (i = 0; i < size; i++) {
+		data[i] = i2c_rx(0);
+	}
+
+	i2c_stop();
+	return 0;
+}
