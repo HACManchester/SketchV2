@@ -35,6 +35,7 @@
  */
 
 #include "Sketch.h"
+#include "i2c.h"
 
 /** LUFA CDC Class driver interface configuration and state information. This structure is
  *  passed to all CDC Class driver functions, so that multiple instances of the same class
@@ -72,12 +73,32 @@ USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface =
 static FILE USBSerialStream;
 
 
+void get_accelerometer_data(int *x, int *y, int *z)
+{
+	*x = 0;
+	*y = 0;
+	*z = 0;
+}
+
+void accelerometer_init(void)
+{
+	uint8_t buff[2];
+
+	buff[0] = 0x6b;		/* power management control */
+	buff[1] = 0x0;		/* ensure device is out of sleep mode */
+
+	i2c_send_bytes(0x68, buff, 2);
+}
+
 /** Main program entry point. This routine contains the overall program flow, including initial
  *  setup of all components and the main program loop.
  */
 int main(void)
 {
+	int x, y, z;
+
 	SetupHardware();
+	i2c_init();
 
 	/* Create a regular character stream for the interface so that it can be used with the stdio.h functions */
 	CDC_Device_CreateStream(&VirtualSerial_CDC_Interface, &USBSerialStream);
@@ -112,6 +133,9 @@ int main(void)
 	    {
 		    fputs(ReportString, &USBSerialStream);
 	    }
+
+		get_accelerometer_data(&x, &y, &z);
+		fprintf(&USBSerialStream, "X=%d Y=%d Z=%d\n", x, y, z);
 
 		/* Must throw away unused bytes from the host, or it will lock up while waiting for the device */
 		CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
