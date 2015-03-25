@@ -5,11 +5,27 @@ static inline void i2c_delay(void)
 	// too much faster and the pic tends to start nacking data
 	// 10 gives us around 40kHz - needs PIC running around 16MHZ
 	// 1 give us around the 110kHz rate
-	_delay_loop_2(1);
+	_delay_loop_2(10);
+}
+
+static void wait_scl(void)
+{
+	unsigned int timeout = 0x2000;
+
+	for (; timeout > 0; timeout--) {
+		if (i2c_get_scl() != 0)
+			return;
+		_delay_loop_2(1);
+	}
+
+	printf_P(PSTR("timeout waiting for scl, SCL=%d, SDA=%d\n"),
+		 i2c_get_scl(), i2c_get_sda());
 }
 
 static void i2c_start(void)
 {
+	wait_scl();
+
 	sda_high();
 	i2c_delay();
 	scl_high();
@@ -28,19 +44,6 @@ static void i2c_stop(void)
 	i2c_delay();
 	sda_high();
 	i2c_delay();	
-}
-
-static void wait_scl(void)
-{
-	unsigned int timeout = 0x2000;
-
-	for (; timeout > 0; timeout--) {
-		if (i2c_get_scl() != 0)
-			return;
-	}
-
-	printf_P(PSTR("timeout waiting for scl, SCL=%d, SDA=%d\n"),
-		 i2c_get_scl(), i2c_get_sda());
 }
 
 static int i2c_tx(unsigned char byte)
@@ -170,7 +173,7 @@ int iic_receive_byte(unsigned char addr)
 	}
 
 	//printf_P(PSTR("reading result\n"));
-	result = i2c_rx(0);
+	result = i2c_rx(1);
 
 	i2c_stop();
 	return result;
