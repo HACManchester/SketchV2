@@ -10,5 +10,5 @@ extern int i2c_send_bytes(unsigned char addr, unsigned size,
 extern int i2c_receive_byte(unsigned char addr);
 
 extern int i2c_receive_bytes(unsigned char addr, unsigned size,
-			     const unsigned char *data);
+			     unsigned char *data);
 
