@@ -73,11 +73,52 @@ USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface =
 static FILE USBSerialStream;
 
 
-void get_accelerometer_data(int *x, int *y, int *z)
+#define ACC_ADDR (0x68 >> 0)
+
+static int acc_rd(unsigned reg, uint8_t *rb)
 {
-	*x = 0;
-	*y = 0;
-	*z = 0;
+	uint8_t cmd[1];
+	uint8_t resp[2];
+	int result;
+
+	cmd[0] = reg;
+
+	if (0) {
+		i2c_send_bytes(ACC_ADDR, 1, cmd);
+		i2c_receive_bytes(ACC_ADDR, 2, resp);
+	} else {
+		i2c_send_bytes(ACC_ADDR, 1, cmd);
+		//_delay_us(10);
+		resp[0] = i2c_receive_byte(ACC_ADDR);
+		//_delay_us(10);
+		cmd[0] = reg + 1;
+		i2c_send_bytes(ACC_ADDR, 1, cmd);
+		//_delay_us(10);
+		resp[1] = i2c_receive_byte(ACC_ADDR);
+	}
+	
+	result = (unsigned int)resp[1];
+	result |= ((unsigned int)resp[0]) << 8;
+
+	if (resp[0] & 0x80)
+		result = -((65536 - result) + 1);
+
+	if (rb) {
+		rb[0] = resp[0];
+		rb[1] = resp[1];
+	}
+
+	_delay_us(10);
+	return result;
+}
+
+void get_accelerometer_data(int *x, int *y, int *z, int *t, uint8_t *rb)
+{
+	*t = acc_rd(0x41, rb);
+	*x = acc_rd(0x3b, NULL);
+	*y = acc_rd(0x3d, NULL);
+	*z = acc_rd(0x3f, NULL);
+	//*x = *y = *z = 0;
 }
 
 void accelerometer_init(void)
@@ -87,7 +128,7 @@ void accelerometer_init(void)
 	buff[0] = 0x6b;		/* power management control */
 	buff[1] = 0x0;		/* ensure device is out of sleep mode */
 
-	i2c_send_bytes(0x68, buff, 2);
+	i2c_send_bytes(ACC_ADDR, 2, buff);
 }
 
 /** Main program entry point. This routine contains the overall program flow, including initial
@@ -95,10 +136,12 @@ void accelerometer_init(void)
  */
 int main(void)
 {
-	int x, y, z;
+	int x, y, z, t;
+	int count = 1;
 
 	SetupHardware();
 	i2c_init();
+	accelerometer_init();
 
 	/* Create a regular character stream for the interface so that it can be used with the stdio.h functions */
 	CDC_Device_CreateStream(&VirtualSerial_CDC_Interface, &USBSerialStream);
@@ -106,6 +149,15 @@ int main(void)
 	LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
 	GlobalInterruptEnable();
 
+	if (0) {
+		uint8_t buff[1];
+
+		buff[0] = 0x75;	/* whoami register */
+		i2c_send_bytes(ACC_ADDR, 1, buff);
+		i2c_receive_bytes(ACC_ADDR, 1, buff);
+		fprintf(&USBSerialStream, "WHOAMI=%x\n", buff[0]);
+	}
+	
 	for (;;)
 	{
 	    _delay_ms(1);
@@ -134,9 +186,15 @@ int main(void)
 		    fputs(ReportString, &USBSerialStream);
 	    }
 
-		get_accelerometer_data(&x, &y, &z);
-		fprintf(&USBSerialStream, "X=%d Y=%d Z=%d\n", x, y, z);
-
+		if (--count == 0) {
+			uint8_t rb[2];
+	
+			get_accelerometer_data(&x, &y, &z, &t, rb);
+			fprintf(&USBSerialStream, "X:%d Y:%d Z:%d\nT=%d (%x %x)\n",
+				x, y, z, t, rb[0], rb[1]);
+			count = 10;
+		}
+		
 		/* Must throw away unused bytes from the host, or it will lock up while waiting for the device */
 		CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
 
