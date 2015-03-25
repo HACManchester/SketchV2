@@ -37,6 +37,6 @@ void i2c_init(void)
 {
 	sda_high();     // default to input
 	scl_high();     // default to input
-	PORTD &= ~SDA;  // drive low when output
-	PORTD &= ~SCL;  // drive low when output
+	PORTC &= ~SDA;  // drive low when output
+	PORTC &= ~SCL;  // drive low when output
 }
