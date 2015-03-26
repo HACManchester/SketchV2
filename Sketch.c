@@ -96,7 +96,7 @@ static int acc_rd(unsigned reg, uint8_t *rb)
 		//_delay_us(10);
 		resp[1] = i2c_receive_byte(ACC_ADDR);
 	}
-	
+
 	result = (unsigned int)resp[1];
 	result |= ((unsigned int)resp[0]) << 8;
 
@@ -157,44 +157,38 @@ int main(void)
 		i2c_receive_bytes(ACC_ADDR, 1, buff);
 		fprintf(&USBSerialStream, "WHOAMI=%x\n", buff[0]);
 	}
-	
+
 	for (;;)
 	{
-	    _delay_ms(1);
-	    
-	    char* ReportString  = NULL;
-	
-	    uint8_t ButtonStatus_LCL = Buttons_GetStatus();
-        Encoder1Status_LCL = Encoder_1_GetStatus();
-	
-	    if (Encoder1Status_LCL == 1)
-		    ReportString = "U\n";
-	    else if (Encoder1Status_LCL == 255)
-		    ReportString = "D\n";
+    _delay_ms(1);
 
-	    Encoder2Status_LCL = Encoder_2_GetStatus();
-	    if (Encoder2Status_LCL == 1)
-		    ReportString = "L\n";
-	    else if (Encoder2Status_LCL == 255)
-		    ReportString = "R\n";
 
-	    if (ButtonStatus_LCL & BUTTONS_BUTTON1)
-		    ReportString = "S\n";
-		    
-		if (ReportString != NULL)
-	    {
-		    fputs(ReportString, &USBSerialStream);
-	    }
+    uint8_t ButtonStatus_LCL = Buttons_GetStatus();
+
+		Encoder1Status_LCL = Encoder_1_GetStatus();
+    if (Encoder1Status_LCL == 1)
+			fputs("U\n", &USBSerialStream);
+    else if (Encoder1Status_LCL == 255)
+			fputs("D\n", &USBSerialStream);
+
+    Encoder2Status_LCL = Encoder_2_GetStatus();
+    if (Encoder2Status_LCL == 1)
+			fputs("L\n", &USBSerialStream);
+    else if (Encoder2Status_LCL == 255)
+			fputs("R\n", &USBSerialStream);
+
+    if (ButtonStatus_LCL & BUTTONS_BUTTON1)
+			fputs("S\n", &USBSerialStream);
 
 		if (--count == 0) {
 			uint8_t rb[2];
-	
+
 			get_accelerometer_data(&x, &y, &z, &t, rb);
 			fprintf(&USBSerialStream, "X:%d Y:%d Z:%d\nT=%d (%x %x)\n",
 				x, y, z, t, rb[0], rb[1]);
 			count = 50;
 		}
-		
+
 		/* Must throw away unused bytes from the host, or it will lock up while waiting for the device */
 		CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
 
@@ -248,4 +242,3 @@ void EVENT_USB_Device_ControlRequest(void)
 {
 	CDC_Device_ProcessControlRequest(&VirtualSerial_CDC_Interface);
 }
-
